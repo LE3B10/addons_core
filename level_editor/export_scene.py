@@ -57,8 +57,13 @@ class MYADDON_OT_export_scene(bpy.types.Operator, bpy_extras.io_utils.ExportHelp
     def parse_scene_recursive_json(self, data_parent, object, level):
         # オブジェクト情報を格納するための辞書
         json_object = {}
+        
         # シーンのオブジェクト1個分のjsonオブジェクト生成
-        json_object["type"] = object.type
+        if "type" in object: # カスタムプロパティ 'type'
+            json_object["type"] = object["type"]
+        else:
+            json_object["type"] = object.type
+
         # オブジェクト名
         json_object["name"] = object.name
 

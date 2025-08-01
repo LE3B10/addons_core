@@ -23,6 +23,7 @@ from .add_collider import OBJECT_PT_collider, MYADDON_OT_add_collider
 from .draw_box_collider import DrawCollider
 from .disable_option import OBJECT_PT_disable_option, MYADDON_OT_disable_option
 from .my_menu import TOPBAR_MT_my_menu, draw_menu_manual
+from .spawn import MYADDON_OT_spawn_point, MYADDON_OT_create_spawn_point
 
 # Blenderに登録するクラスリスト
 classes = (
@@ -34,6 +35,8 @@ classes = (
     MYADDON_OT_add_filename,
     MYADDON_OT_add_collider,
     MYADDON_OT_disable_option,
+    MYADDON_OT_spawn_point,
+    MYADDON_OT_create_spawn_point,
 
     # パネル
     OBJECT_PT_file_name,

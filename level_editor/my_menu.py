@@ -16,6 +16,7 @@ class TOPBAR_MT_my_menu(bpy.types.Menu):
         layout.operator("myaddon.myaddon_ot_create_ico_sphere", text="ICO球生成")
         layout.operator("myaddon.myaddon_ot_export_scene", text="シーン出力")
         layout.operator("myaddon.myaddon_ot_import_scene", text="シーン入力")
+        layout.operator("myaddon.create_spawn_point", text="出現ポイント生成")
         #layout.operator("myaddon.myaddon_ot_add_filename", text="FileName追加")
         #layout.operator("myaddon.myaddon_ot_add_collider", text="コライダー追加")
         #layout.operator("myaddon.myaddon_ot_disable_option", text="無効オプション追加")
