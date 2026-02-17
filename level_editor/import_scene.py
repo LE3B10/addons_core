@@ -41,9 +41,46 @@ class MYADDON_OT_import_scene(bpy.types.Operator, ImportHelper):
 
                 # トランスフォームの設定
                 transform = obj_data["transform"]
-                obj.location = transform["translation"]
-                obj.rotation_euler = [math.radians(angle) for angle in transform["rotation"]]
-                obj.scale = transform["scaling"]
+
+                # 基本は transform の値を使う
+                loc = transform["translation"]
+                rot_deg = transform["rotation"]
+                scale = transform["scaling"]
+
+                # collider 情報がある場合は、そちらを優先して
+                # 位置 / 大きさを決める
+                collider = obj_data.get("collider")
+                if collider is not None:
+                    # 位置：collider.center を使う
+                    center = collider.get("center")
+                    if center is not None:
+                        loc = center
+
+                    # 大きさ：collider.size / radius から scale を決める
+                    col_type = collider.get("type", "BOX")
+                    if col_type == "BOX" and "size" in collider:
+                        size = collider["size"]
+                        # Blender のデフォルトキューブは 2x2x2 なので、
+                        # 半分がスケールになる
+                        scale = [
+                            size[0] * 0.5,
+                            size[1] * 0.5,
+                            size[2] * 0.5,
+                        ]
+                    elif col_type == "SPHERE" and "radius" in collider:
+                        r = collider["radius"]
+                        scale = [r, r, r]
+                    elif col_type in {"CYLINDER", "CAPSULE"} and \
+                            "radius" in collider and "height" in collider:
+                        r = collider["radius"]
+                        h = collider["height"]
+                        # デフォルトの Cylinder は半径1, 高さ2なので、高さは半分
+                        scale = [r, r, h * 0.5]
+
+                # 計算した loc / rot / scale をオブジェクトに適用
+                obj.location = loc
+                obj.rotation_euler = [math.radians(angle) for angle in rot_deg]
+                obj.scale = scale
 
                 # カスタムプロパティの設定
                 if "file_name" in obj_data:
@@ -51,7 +88,8 @@ class MYADDON_OT_import_scene(bpy.types.Operator, ImportHelper):
                 if "collider" in obj_data:
                     obj["collider"] = obj_data["collider"]
                     obj["collider_center"] = obj_data["collider"]["center"]
-                    obj["collider_size"] = obj_data["collider"]["size"]
+                    if "size" in obj_data["collider"]:
+                        obj["collider_size"] = obj_data["collider"]["size"]
 
                 # 子オブジェクトのインポート
                 if "children" in obj_data:

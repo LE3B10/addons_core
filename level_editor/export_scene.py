@@ -93,12 +93,20 @@ class MYADDON_OT_export_scene(bpy.types.Operator, bpy_extras.io_utils.ExportHelp
         if "file_name" in object:
             json_object["file_name"] = object["file_name"]
 
-        # カスタムプロパティ'collider'
-        if "collider" in object:
-            collider = dict()
-            collider["type"] = object["collider"]
-            collider["center"] = object["collider_center"].to_list()
-            collider["size"] = object["collider_size"].to_list()
+        # Colliderプロパティ
+        col = getattr(object, "collider", None)
+        if col and col.enabled:
+            collider = {}
+            collider["type"] = str(col.type) # コライダータイプ
+            collider["center"] = [float(col.center[0]), float(col.center[1]), float(col.center[2])] # コライダー中心
+            if col.type == 'BOX':
+                collider["size"] = [float(col.size[0]), float(col.size[1]), float(col.size[2])] # コライダーサイズ
+            else:
+                collider["radius"] = float(col.radius) # コライダー半径
+                if col.type in {'CYLINDER', 'CAPSULE'}:
+                    collider["height"] = float(col.height) # コライダー高さ
+                    collider["height"] = float(col.height) # コライダー高さ
+                
             json_object["collider"] = collider
 
         # 1個分のjsonオブジェクトを親オブジェクトに登録

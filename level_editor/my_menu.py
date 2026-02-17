@@ -16,11 +16,17 @@ class TOPBAR_MT_my_menu(bpy.types.Menu):
         layout.operator("myaddon.myaddon_ot_create_ico_sphere", text="ICO球生成")
         layout.operator("myaddon.myaddon_ot_export_scene", text="シーン出力")
         layout.operator("myaddon.myaddon_ot_import_scene", text="シーン入力")
-        layout.operator("myaddon.create_spawn_point", text="出現ポイント生成")
-        #layout.operator("myaddon.myaddon_ot_add_filename", text="FileName追加")
-        #layout.operator("myaddon.myaddon_ot_add_collider", text="コライダー追加")
-        #layout.operator("myaddon.myaddon_ot_disable_option", text="無効オプション追加")
-        
+
+        # プレイヤーの出現ポイント、エネミーの出現ポイント、ボスの出現ポイントを配置
+        op = layout.operator("myaddon.create_spawn_point", text="プレイヤーの出現ポイントを配置")
+        op.object_name = "Player"
+
+        op = layout.operator("myaddon.create_spawn_point", text="エネミーの出現ポイントを配置")
+        op.object_name = "Enemy"
+
+        op = layout.operator("myaddon.create_spawn_point", text="ボスの出現ポイントを配置")
+        op.object_name = "Boss"
+
         # 区切り線
         layout.separator()
         layout.operator("wm.url_open_preset", text="Manual", icon='HELP')

@@ -1,6 +1,18 @@
 import bpy
 import os
 import bpy.ops
+from bpy.props import StringProperty
+
+# ユニークな名前を作る関数
+def make_unique_name(base_name: str) -> str:
+    """base_name_001, base_name_002, ... のようにユニークな名前を生成する"""
+    existing_names = {obj.name for obj in bpy.data.objects}
+    index = 1
+    while True:
+        candidate = f"{base_name}_{index:03d}"
+        if candidate not in existing_names:
+            return candidate
+        index += 1
 
 # オペレーター 出現ポイントのシンボルを読み込む
 class MYADDON_OT_spawn_point(bpy.types.Operator):
@@ -8,6 +20,7 @@ class MYADDON_OT_spawn_point(bpy.types.Operator):
     bl_label = "出現ポイントシンボルImport"
     bl_description = "出現ポイントシンボルImportします"
 
+    # プロトタイプ用オブジェクト名（非表示の元モデル）
     prototype_object_name = "PlayerSpawnPoint"
 
     def execute(self, context):
@@ -21,7 +34,7 @@ class MYADDON_OT_spawn_point(bpy.types.Operator):
         script_dir = os.path.dirname(__file__)
 
         # 同じフォルダ内のファイルを指定
-        model_path = os.path.abspath(os.path.join(script_dir, "PlayerStateModel","PlayerIdleState.gltf"))
+        model_path = os.path.abspath(os.path.join(script_dir, "Resources/Models/","cube.gltf"))
 
         # デバッグ出力
         print(f"モデルパス: {model_path}")
@@ -59,31 +72,34 @@ class MYADDON_OT_create_spawn_point(bpy.types.Operator):
     bl_description = "出現ポイントシンボルを配置します"
     bl_options = {'REGISTER', 'UNDO'}
 
-    object_name = "SpawnPoint"
+    object_name: StringProperty(
+        name="Spawn name",
+        description="SpwanPointの名前を指定します",
+    )
 
     def execute(self, context):
-        # 読み込み済みの出現ポイントシンボルを取得
+        # プロトタイプ取得
         spawn_point_object = bpy.data.objects.get(MYADDON_OT_spawn_point.prototype_object_name)
 
-        # まだ読み込んでいない場合
+        # まだ読み込んでいない場合はインポート
         if spawn_point_object is None:
-            # 読み込みオペレータを実行
             bpy.ops.myaddon.spawn_point("EXEC_DEFAULT")
-            # 再探索、今度は確実に取得できるはず
             spawn_point_object = bpy.data.objects.get(MYADDON_OT_spawn_point.prototype_object_name)
 
-            print("出現ポイントシンボルを読み込みました")
+        # それでも取れなければエラー
+        if spawn_point_object is None:
+            self.report({'ERROR'}, "SpawnPointのプロトタイプが取得できませんでした。")
+            return {'CANCELLED'}
 
-            # Blenderでの選択を解除する
-            bpy.ops.object.select_all(action='DESELECT')
+        # ここからは「毎回必ず」実行される複製処理
+        bpy.ops.object.select_all(action='DESELECT')
 
-            # 複製元の非表示オブジェクトを複製する
-            object = spawn_point_object.copy()
+        new_obj = spawn_point_object.copy()
+        bpy.context.collection.objects.link(new_obj)
 
-            # 複製したオブジェクトを現在のシーンにリンク（出現させる）
-            bpy.context.collection.objects.link(object)
+        # ユニークな名前を付与
+        base_type = self.object_name
 
-            # オブジェクト名を設定
-            object.name = MYADDON_OT_create_spawn_point.object_name
+        new_obj.name = make_unique_name(base_type)
 
-            return {'FINISHED'}
+        return {'FINISHED'}
