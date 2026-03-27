@@ -22,6 +22,8 @@ from .file_name import OBJECT_PT_file_name, MYADDON_OT_add_filename
 from .disable_option import OBJECT_PT_disable_option, MYADDON_OT_disable_option
 from .my_menu import TOPBAR_MT_my_menu, draw_menu_manual
 from .spawn import MYADDON_OT_spawn_point, MYADDON_OT_create_spawn_point
+from . import level_object_ui  # レベルオブジェクト用のプロパティとUI
+from . import intro_camera  # 開始演出カメラポイント用のオペレータ
 
 # Collider (新方式)
 from .collider_props import register_props, unregister_props   # ← 必須
@@ -71,15 +73,22 @@ def register():
     bpy.types.TOPBAR_MT_editor_menus.append(draw_menu_manual)
     # 3Dビューに描画関数を追加
     collider_draw.enable() # ← 新Collider描画有効化
+
+    level_object_ui.register()  # レベルオブジェクト用のプロパティとUIを登録
+    intro_camera.register()  # 開始演出カメラポイント用のオペレータを登録
+
     print("レベルエディタが有効化されました。")
 
 #アドオン無効化時コールバック
 def unregister():
+
+    level_object_ui.unregister()  # レベルオブジェクト用のプロパティとUIを削除
+    intro_camera.unregister()  # 開始演出カメラポイント用のオペレータを削除
+
     # メニューから項目を削除
     bpy.types.TOPBAR_MT_editor_menus.remove(draw_menu_manual)
     # 3Dビューに描画関数を追加
     collider_draw.disable() # ← 新Collider描画無効化
-
     # Blenderからクラスを削除
     for cls in classes:
         bpy.utils.unregister_class(cls)
