@@ -54,6 +54,40 @@ class TOPBAR_MT_my_menu(bpy.types.Menu):
         op = layout.operator("myaddon.create_intro_camera_point", text="開始演出注視ポイントを配置")
         op.point_type = "IntroLookAtPoint"
         op.object_name = "IntroLook"
+        
+        layout.separator()
+        layout.label(text="Objectives")
+
+        op = layout.operator("myaddon.create_objective_point", text="探索装置を配置")
+        op.point_type = "DeviceObjective"
+        op.object_name = "Device"
+        op.objective_id = "power_a"
+        op.ui_name = "発電装置A"
+        op.activate_time = 3.0
+
+        op = layout.operator("myaddon.create_objective_point", text="防衛対象を配置")
+        op.point_type = "DefenseTarget"
+        op.object_name = "Defense"
+        op.objective_id = "base_core"
+        op.ui_name = "防衛コア"
+        op.max_hp = 1000
+        op.start_hp = 1000
+        op.defense_time = 120.0
+
+        op = layout.operator("myaddon.create_objective_point", text="脱出地点を配置")
+        op.point_type = "EscapePoint"
+        op.object_name = "Escape"
+        op.objective_id = "main_exit"
+        op.ui_name = "脱出ゲート"
+        op.activate_time = 5.0
+
+        op = layout.operator("myaddon.create_objective_point", text="ボスフェーズトリガーを配置")
+        op.point_type = "BossPhaseTrigger"
+        op.object_name = "BossPhase"
+        op.phase = 2
+        op.trigger_type = "BossHPBelow"
+        op.threshold = 0.65
+        op.event_id = "phase2_start"
 
         layout.separator()
         layout.operator("wm.url_open_preset", text="Manual", icon='HELP')
