@@ -40,6 +40,7 @@ def _categorize_entity(obj_dict):
 
 # シーンからレベルデータをエクスポートする関数
 def export_level_dict(scene):
+    stage_mode = str(scene.get("stage_mode", "Unknown") or "Unknown")
 
     # ルートデータ構造の初期化
     root = {
@@ -47,7 +48,7 @@ def export_level_dict(scene):
         "meta": dict(DEFAULT_META),  # メタデータは必要に応じてシーンから取得して上書きする
         "stage": {
             "id": scene.name,
-            "mode": "Unknown",
+            "mode": stage_mode,
         },
         "name": "scene",
         "objects": [],

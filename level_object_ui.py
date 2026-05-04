@@ -57,6 +57,14 @@ SPAWN_POINT_TYPES = {"PlayerSpawnPoint", "EnemySpawnPoint", "BossSpawnPoint"}
 WAVE_EDIT_TYPES = {"EnemySpawnPoint", "BossSpawnPoint"}
 INTRO_CAMERA_TYPES = {"IntroCameraPoint", "IntroLookAtPoint"}
 OBJECTIVE_POINT_TYPES = {"DeviceObjective", "DefenseTarget", "EscapePoint", "BossPhaseTrigger"}
+STAGE_MODE_ITEMS = [
+    ("Unknown", "Unknown", "未設定"),
+    ("Wave", "Wave", "ウェーブ進行型"),
+    ("Explore", "Explore", "探索型"),
+    ("Defend", "Defend", "防衛型"),
+    ("Escape", "Escape", "脱出型"),
+    ("Boss", "Boss", "ボス戦型"),
+]
 
 
 def _get_cp(obj, key, default):
@@ -224,6 +232,12 @@ def register_object_props():
     def set_event_id(self, v):
         _set_cp(self, "event_id", str(v))
 
+    def get_stage_mode(self):
+        return str(_get_cp(self, "stage_mode", "Unknown"))
+
+    def set_stage_mode(self, v):
+        _set_cp(self, "stage_mode", str(v))
+
     # --------------------------------------------------
     # Property 登録
     # --------------------------------------------------
@@ -373,6 +387,12 @@ def register_object_props():
         get=get_event_id,
         set=set_event_id
     )
+    bpy.types.Scene.level_stage_mode = EnumProperty(
+        name="Stage Mode",
+        items=STAGE_MODE_ITEMS,
+        get=get_stage_mode,
+        set=set_stage_mode
+    )
 
 
 def unregister_object_props():
@@ -403,6 +423,8 @@ def unregister_object_props():
     ):
         if hasattr(bpy.types.Object, n):
             delattr(bpy.types.Object, n)
+    if hasattr(bpy.types.Scene, "level_stage_mode"):
+        delattr(bpy.types.Scene, "level_stage_mode")
 
 
 class VIEW3D_PT_level_object(bpy.types.Panel):
@@ -415,6 +437,11 @@ class VIEW3D_PT_level_object(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
+        scene = context.scene
+
+        layout.label(text="Stage")
+        layout.prop(scene, "level_stage_mode")
+        layout.separator()
 
         if obj is None:
             layout.label(text="オブジェクトを選択してください")
