@@ -1,5 +1,5 @@
 # level_schema.py
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # メタデータのデフォルト値
 DEFAULT_META = {
