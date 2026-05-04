@@ -53,6 +53,16 @@ BOSS_TRIGGER_TYPE_ITEMS = [
     ("Manual",      "Manual",      "ゲーム側から手動発火"),
 ]
 
+
+STAGE_MODE_ITEMS = [
+    ("Unknown", "Unknown", "未設定"),
+    ("Wave", "Wave", "ウェーブ制"),
+    ("Explore", "Explore", "探索"),
+    ("Defend", "Defend", "防衛"),
+    ("Escape", "Escape", "脱出"),
+    ("Boss", "Boss", "ボス戦"),
+]
+
 SPAWN_POINT_TYPES = {"PlayerSpawnPoint", "EnemySpawnPoint", "BossSpawnPoint"}
 WAVE_EDIT_TYPES = {"EnemySpawnPoint", "BossSpawnPoint"}
 INTRO_CAMERA_TYPES = {"IntroCameraPoint", "IntroLookAtPoint"}
@@ -539,11 +549,31 @@ class VIEW3D_PT_level_object(bpy.types.Panel):
                 op.event_id = getattr(obj, "level_event_id", "")
 
 
-classes = (VIEW3D_PT_level_object,)
+class VIEW3D_PT_level_stage(bpy.types.Panel):
+    bl_label = "Level Stage"
+    bl_idname = "VIEW3D_PT_level_stage"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Level"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop(scene, "level_stage_mode")
+
+
+classes = (VIEW3D_PT_level_object, VIEW3D_PT_level_stage,)
 
 
 def register():
     register_object_props()
+
+    bpy.types.Scene.level_stage_mode = EnumProperty(
+        name="Stage Mode",
+        items=STAGE_MODE_ITEMS,
+        default="Unknown"
+    )
+
     for c in classes:
         bpy.utils.register_class(c)
 
@@ -551,4 +581,8 @@ def register():
 def unregister():
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
+
+    if hasattr(bpy.types.Scene, "level_stage_mode"):
+        delattr(bpy.types.Scene, "level_stage_mode")
+
     unregister_object_props()
