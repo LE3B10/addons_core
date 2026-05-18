@@ -2,7 +2,12 @@
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, PointerProperty
-from .collider_types import enum_items, COL_BOX, COL_SPHERE, COL_CYLINDER, COL_CAPSULE
+from .collider_types import (
+    enum_items,
+    collision_type_enum_items,
+    COL_BOX,
+    COLLISION_TYPE_DEFAULT,
+)
 
 # 3Dビューを再描画する
 def _redraw_3d_views():
@@ -25,6 +30,13 @@ class ColliderProps(PropertyGroup):
         items=enum_items(),
         default=COL_BOX,
         update=_on_change,  # 変更時に3Dビュー再描画
+    )
+    # Collision TypeをCollider形状とは独立したEnumとして保持する
+    collision_type: EnumProperty(
+        name="Collision Type",
+        items=collision_type_enum_items(),
+        default=COLLISION_TYPE_DEFAULT,
+        update=_on_change,
     )
     center: FloatVectorProperty(name="Center", size=3, default=(0,0,0), update=_on_change) # 全タイプ共通
     size:   FloatVectorProperty(name="Size",   size=3, default=(2,2,2), min=0.0, update=_on_change)   # BOX
