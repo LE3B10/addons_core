@@ -2,7 +2,14 @@
 import bpy
 from bpy.types import Panel, Operator
 from mathutils import Vector
-from .collider_types import COL_BOX, COL_SPHERE, COL_CYLINDER, COL_CAPSULE, enum_items
+from .collider_types import (
+    COL_BOX,
+    COL_CYLINDER,
+    COL_CAPSULE,
+    COLLISION_TYPE_DEFAULT,
+    collision_type_enum_items,
+    enum_items,
+)
 
 # 追加：初期化ソース選択
 INIT_ITEMS = [
@@ -40,6 +47,8 @@ class OBJECT_PT_collider(Panel):
         row.prop(col, "type")
         row.operator("myaddon.remove_collider_props", text="", icon="X")
 
+        # Collision TypeはCollider形状とは別項目として表示する
+        layout.prop(col, "collision_type")
         layout.prop(col, "center")
 
         if col.type == COL_BOX:
@@ -58,6 +67,12 @@ class MYADDON_OT_add_collider_props_dialog(Operator):
     bl_label = "Add Collider"
 
     create_type: bpy.props.EnumProperty(name="Type", items=enum_items(), default=COL_BOX)
+    # Add Collider時にCollision Typeも初期設定できるようにする
+    create_collision_type: bpy.props.EnumProperty(
+        name="Collision Type",
+        items=collision_type_enum_items(),
+        default=COLLISION_TYPE_DEFAULT,
+    )
     initialize_from: bpy.props.EnumProperty(name="Initialize", items=INIT_ITEMS, default='BOUNDS')
 
     def invoke(self, ctx, event):
@@ -66,6 +81,7 @@ class MYADDON_OT_add_collider_props_dialog(Operator):
     def draw(self, ctx):
         col = self.layout.column()
         col.prop(self, "create_type")
+        col.prop(self, "create_collision_type")
         col.prop(self, "initialize_from")
 
     def execute(self, ctx):
@@ -77,6 +93,7 @@ class MYADDON_OT_add_collider_props_dialog(Operator):
 
         col.enabled = True
         col.type = self.create_type
+        col.collision_type = self.create_collision_type
 
         # 初期化方針
         init = self.initialize_from

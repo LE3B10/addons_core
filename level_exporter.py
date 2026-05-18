@@ -2,6 +2,7 @@
 import math
 from .level_schema import SCHEMA_VERSION, DEFAULT_META
 from .level_export_extras import extract_collections, extract_props
+from .collider_types import COLLISION_TYPE_DEFAULT, collision_type_id
 
 
 TYPE_NORMALIZE_MAP = {
@@ -120,8 +121,12 @@ def _object_to_dict(obj):
     # Collider
     col = getattr(obj, "collider", None)
     if col and col.enabled:
+        # Collision Typeは未設定の既存ColliderでもDefaultとしてJSONへ出力する
+        collision_type = str(getattr(col, "collision_type", COLLISION_TYPE_DEFAULT) or COLLISION_TYPE_DEFAULT)
         c = {
             "type": str(col.type),
+            "collision_type": collision_type,
+            "collision_type_id": collision_type_id(collision_type),
             "center": [float(col.center[0]), float(col.center[1]), float(col.center[2])],
         }
         if col.type == "BOX":
