@@ -18,14 +18,45 @@ INIT_ITEMS = [
     ('LAST',   "Reuse Last Values",  "Reuse values if any"),
 ]
 
-def _local_bounds_size(obj: bpy.types.Object) -> Vector:
-    # obj.dimensions はワールド系スケール込みなので、ローカルに戻す
-    sx, sy, sz = (abs(obj.scale.x), abs(obj.scale.y), abs(obj.scale.z))
-    sx = sx if sx > 1e-6 else 1.0
-    sy = sy if sy > 1e-6 else 1.0
-    sz = sz if sz > 1e-6 else 1.0
-    dims_world = obj.dimensions
-    return Vector((dims_world.x / sx, dims_world.y / sy, dims_world.z / sz))
+def _object_bounds_collider_values(obj: bpy.types.Object):
+    # obj.bound_box を obj.matrix_world で変換して、見た目に一致するワールド空間のCollider値を作る。
+    bb_local = [Vector(corner) for corner in obj.bound_box]
+    bb_world = [obj.matrix_world @ corner for corner in bb_local]
+    center = sum(bb_world, Vector()) / len(bb_world)
+
+    min_local = Vector((
+        min(corner.x for corner in bb_local),
+        min(corner.y for corner in bb_local),
+        min(corner.z for corner in bb_local),
+    ))
+    max_local = Vector((
+        max(corner.x for corner in bb_local),
+        max(corner.y for corner in bb_local),
+        max(corner.z for corner in bb_local),
+    ))
+    local_size = max_local - min_local
+
+    world_axes = obj.matrix_world.to_3x3()
+    size = Vector((
+        local_size.x * world_axes.col[0].length,
+        local_size.y * world_axes.col[1].length,
+        local_size.z * world_axes.col[2].length,
+    ))
+    rotation = obj.matrix_world.to_quaternion().to_euler('XYZ')
+    return center, size, rotation
+
+def _set_collider_from_bounds(obj: bpy.types.Object, col):
+    # Add/Reset時は選択オブジェクトごとに現在のワールド姿勢からCollider値を再計算する。
+    center, size, rotation = _object_bounds_collider_values(obj)
+    col.center = center
+    col.rotation = rotation
+
+    if col.type == COL_BOX:
+        col.size = size
+    else:
+        col.radius = max(size.x, size.y, size.z) * 0.5
+        if col.type in (COL_CYLINDER, COL_CAPSULE):
+            col.height = size.z
 
 def _selected_collider_objects():
     # Collider操作はアクティブではなく選択中の全オブジェクトを対象にする。
@@ -63,7 +94,9 @@ class OBJECT_PT_collider(Panel):
         layout.prop(col, "center")
 
         if col.type == COL_BOX:
+            # Box Colliderは中心・サイズに加えて回転も編集できるように表示する。
             layout.prop(col, "size")
+            layout.prop(col, "rotation")
         else:
             layout.prop(col, "radius")
             if col.type in (COL_CYLINDER, COL_CAPSULE):
@@ -117,23 +150,19 @@ class MYADDON_OT_add_collider_props_dialog(Operator):
 
             if col.type == COL_BOX:
                 if init == 'BOUNDS':
-                    # ローカルバウンディングボックスからサイズ＆中心を取る
-                    from mathutils import Vector
-                    bb = [Vector(v) for v in obj.bound_box]
-                    bb_center = sum(bb, Vector()) / 8.0
-                    col.center = bb_center
-                    col.size = _local_bounds_size(obj)
+                    # Box Collider追加時は回転・スケール込みの境界から初期化する。
+                    _set_collider_from_bounds(obj, col)
                 elif init == 'ZERO':
+                    col.rotation = (0.0, 0.0, 0.0)
                     col.size = (1,1,1)
                 elif init == 'LAST':
                     pass
             else:
                 if init == 'BOUNDS':
-                    s = _local_bounds_size(obj)
-                    col.radius = max(s.x, s.y, s.z) * 0.5
-                    if col.type in (COL_CYLINDER, COL_CAPSULE):
-                        col.height = s.z
+                    # Box以外も同じ境界計算を使って中心と寸法を合わせる。
+                    _set_collider_from_bounds(obj, col)
                 elif init == 'ZERO':
+                    col.rotation = (0.0, 0.0, 0.0)
                     col.radius = 1.0
                     if col.type in (COL_CYLINDER, COL_CAPSULE):
                         col.height = 2.0
@@ -178,12 +207,6 @@ class MYADDON_OT_reset_collider_values(Operator):
             if not col:
                 continue
             # Reset Colliderも選択中の全オブジェクトへ一括適用する。
-            col.center = (0,0,0)
-            if col.type == COL_BOX:
-                col.size = (2,2,2)
-            else:
-                col.radius = 1.0
-                if col.type in (COL_CYLINDER, COL_CAPSULE):
-                    col.height = 2.0
+            _set_collider_from_bounds(obj, col)
         _redraw_3d_views()
         return {'FINISHED'}
