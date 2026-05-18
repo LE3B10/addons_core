@@ -87,14 +87,17 @@ def draw_handler():
         if not col or not col.enabled:
             continue
         if col.type == COL_BOX:
-            # PropertyGroup 値を取得
+            # 保存済みのワールド中心・サイズ・回転からBox Colliderの描画行列を組み立てる。
             c = mathutils.Vector(col.center)
             s = mathutils.Vector(col.size)
-            _add_box(obj.matrix_world, c, s, verts, edges)
+            rot = mathutils.Euler(col.rotation, 'XYZ').to_matrix().to_4x4()
+            mat_world = mathutils.Matrix.Translation(c) @ rot
+            _add_box(mat_world, mathutils.Vector((0.0, 0.0, 0.0)), s, verts, edges)
 
         elif col.type == COL_SPHERE:
-             # 半径はローカル基準（非等方スケールだと楕円に見えます）
-            _add_sphere(obj.matrix_world, col.center, float(col.radius), verts, edges)
+            # Sphere Colliderも保存済みのワールド中心と半径で描画する。
+            mat_world = mathutils.Matrix.Identity(4)
+            _add_sphere(mat_world, col.center, float(col.radius), verts, edges)
 
     if verts:
         _draw_lines(verts, edges)

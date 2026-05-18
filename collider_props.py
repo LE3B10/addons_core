@@ -39,6 +39,8 @@ class ColliderProps(PropertyGroup):
         update=_on_change,
     )
     center: FloatVectorProperty(name="Center", size=3, default=(0,0,0), update=_on_change) # 全タイプ共通
+    # Box Colliderの向きを保存・編集できるようにオイラー角プロパティを追加する。
+    rotation: FloatVectorProperty(name="Rotation", size=3, subtype='EULER', default=(0,0,0), update=_on_change)
     size:   FloatVectorProperty(name="Size",   size=3, default=(2,2,2), min=0.0, update=_on_change)   # BOX
     radius: FloatProperty(name="Radius", default=1.0, min=0.0, update=_on_change)                     # SP/CL/CY
     height: FloatProperty(name="Height", default=2.0, min=0.0, update=_on_change)                     # CL/CY
