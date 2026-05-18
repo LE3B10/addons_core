@@ -19,11 +19,8 @@ INIT_ITEMS = [
 ]
 
 def _object_bounds_collider_values(obj: bpy.types.Object):
-    # obj.bound_box を obj.matrix_world で変換して、見た目に一致するワールド空間のCollider値を作る。
+    # obj.bound_box のローカル中心を matrix_world で変換し、未適用スケール込みのBox Collider値を作る。
     bb_local = [Vector(corner) for corner in obj.bound_box]
-    bb_world = [obj.matrix_world @ corner for corner in bb_local]
-    center = sum(bb_world, Vector()) / len(bb_world)
-
     min_local = Vector((
         min(corner.x for corner in bb_local),
         min(corner.y for corner in bb_local),
@@ -34,15 +31,18 @@ def _object_bounds_collider_values(obj: bpy.types.Object):
         max(corner.y for corner in bb_local),
         max(corner.z for corner in bb_local),
     ))
-    local_size = max_local - min_local
 
-    world_axes = obj.matrix_world.to_3x3()
+    local_center = (min_local + max_local) * 0.5
+    local_size = max_local - min_local
+    world_scale = obj.matrix_world.to_scale()
+
+    center = obj.matrix_world @ local_center
     size = Vector((
-        local_size.x * world_axes.col[0].length,
-        local_size.y * world_axes.col[1].length,
-        local_size.z * world_axes.col[2].length,
+        local_size.x * abs(world_scale.x),
+        local_size.y * abs(world_scale.y),
+        local_size.z * abs(world_scale.z),
     ))
-    rotation = obj.matrix_world.to_quaternion().to_euler('XYZ')
+    rotation = obj.matrix_world.to_euler('XYZ')
     return center, size, rotation
 
 def _set_collider_from_bounds(obj: bpy.types.Object, col):
