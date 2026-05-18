@@ -27,6 +27,17 @@ def _local_bounds_size(obj: bpy.types.Object) -> Vector:
     dims_world = obj.dimensions
     return Vector((dims_world.x / sx, dims_world.y / sy, dims_world.z / sz))
 
+def _selected_collider_objects():
+    # Collider操作はアクティブではなく選択中の全オブジェクトを対象にする。
+    return [obj for obj in bpy.context.selected_objects if hasattr(obj, "collider")]
+
+def _redraw_3d_views():
+    for win in bpy.context.window_manager.windows:
+        for area in win.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+
+
 class OBJECT_PT_collider(Panel):
     bl_label = "Collider"
     bl_idname = "OBJECT_PT_collider"
@@ -85,51 +96,51 @@ class MYADDON_OT_add_collider_props_dialog(Operator):
         col.prop(self, "initialize_from")
 
     def execute(self, ctx):
-        obj = ctx.object
-        col = getattr(obj, "collider", None)
-        if not col:
-            self.report({'ERROR'}, "Collider PropertyGroup is missing")
+        selected_objects = _selected_collider_objects()
+        if not selected_objects:
+            self.report({'WARNING'}, "No objects selected")
             return {'CANCELLED'}
 
-        col.enabled = True
-        col.type = self.create_type
-        col.collision_type = self.create_collision_type
+        for obj in selected_objects:
+            col = getattr(obj, "collider", None)
+            if not col:
+                continue
 
-        # 初期化方針
-        init = self.initialize_from
+            col.enabled = True
+            col.type = self.create_type
+            col.collision_type = self.create_collision_type
 
-        col.center = (0,0,0)
+            # 選択中の各オブジェクトに同じCollider設定を適用しつつ寸法は個別に初期化する。
+            init = self.initialize_from
 
-        if col.type == COL_BOX:
-            if init == 'BOUNDS':
-                # ローカルバウンディングボックスからサイズ＆中心を取る
-                from mathutils import Vector
-                bb = [Vector(v) for v in obj.bound_box]
-                bb_center = sum(bb, Vector()) / 8.0
-                col.center = bb_center
-                col.size = _local_bounds_size(obj)
-            elif init == 'ZERO':
-                col.size = (1,1,1)
-            elif init == 'LAST':
-                pass
-        else:
-            if init == 'BOUNDS':
-                s = _local_bounds_size(obj)
-                col.radius = max(s.x, s.y, s.z) * 0.5
-                if col.type in (COL_CYLINDER, COL_CAPSULE):
-                    col.height = s.z
-            elif init == 'ZERO':
-                col.radius = 1.0
-                if col.type in (COL_CYLINDER, COL_CAPSULE):
-                    col.height = 2.0
-            elif init == 'LAST':
-                pass
+            col.center = (0,0,0)
 
-        # 再描画
-        for win in bpy.context.window_manager.windows:
-            for area in win.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area.tag_redraw()
+            if col.type == COL_BOX:
+                if init == 'BOUNDS':
+                    # ローカルバウンディングボックスからサイズ＆中心を取る
+                    from mathutils import Vector
+                    bb = [Vector(v) for v in obj.bound_box]
+                    bb_center = sum(bb, Vector()) / 8.0
+                    col.center = bb_center
+                    col.size = _local_bounds_size(obj)
+                elif init == 'ZERO':
+                    col.size = (1,1,1)
+                elif init == 'LAST':
+                    pass
+            else:
+                if init == 'BOUNDS':
+                    s = _local_bounds_size(obj)
+                    col.radius = max(s.x, s.y, s.z) * 0.5
+                    if col.type in (COL_CYLINDER, COL_CAPSULE):
+                        col.height = s.z
+                elif init == 'ZERO':
+                    col.radius = 1.0
+                    if col.type in (COL_CYLINDER, COL_CAPSULE):
+                        col.height = 2.0
+                elif init == 'LAST':
+                    pass
+
+        _redraw_3d_views()
         return {'FINISHED'}
 
 class MYADDON_OT_remove_collider_props(Operator):
@@ -137,16 +148,18 @@ class MYADDON_OT_remove_collider_props(Operator):
     bl_label = "Remove Collider"
 
     def execute(self, ctx):
-        obj = ctx.object
-        col = getattr(obj, "collider", None)
-        if not col:
+        selected_objects = _selected_collider_objects()
+        if not selected_objects:
+            self.report({'WARNING'}, "No objects selected")
             return {'CANCELLED'}
-        col.enabled = False
-        # 値は保持（再追加で LAST を選べば復活）
-        for win in bpy.context.window_manager.windows:
-            for area in win.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area.tag_redraw()
+
+        for obj in selected_objects:
+            col = getattr(obj, "collider", None)
+            if not col:
+                continue
+            # Remove Colliderも選択中の全オブジェクトへ一括適用する。
+            col.enabled = False
+        _redraw_3d_views()
         return {'FINISHED'}
 
 # 完全リセット（原点＆既定値へ戻す）
@@ -155,19 +168,22 @@ class MYADDON_OT_reset_collider_values(Operator):
     bl_label = "Reset Collider Values"
 
     def execute(self, ctx):
-        obj = ctx.object
-        col = getattr(obj, "collider", None)
-        if not col:
+        selected_objects = _selected_collider_objects()
+        if not selected_objects:
+            self.report({'WARNING'}, "No objects selected")
             return {'CANCELLED'}
-        col.center = (0,0,0)
-        if col.type == COL_BOX:
-            col.size = (2,2,2)
-        else:
-            col.radius = 1.0
-            if col.type in (COL_CYLINDER, COL_CAPSULE):
-                col.height = 2.0
-        for win in bpy.context.window_manager.windows:
-            for area in win.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area.tag_redraw()
+
+        for obj in selected_objects:
+            col = getattr(obj, "collider", None)
+            if not col:
+                continue
+            # Reset Colliderも選択中の全オブジェクトへ一括適用する。
+            col.center = (0,0,0)
+            if col.type == COL_BOX:
+                col.size = (2,2,2)
+            else:
+                col.radius = 1.0
+                if col.type in (COL_CYLINDER, COL_CAPSULE):
+                    col.height = 2.0
+        _redraw_3d_views()
         return {'FINISHED'}
