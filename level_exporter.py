@@ -130,13 +130,15 @@ def _object_to_dict(obj):
             "center": [float(col.center[0]), float(col.center[1]), float(col.center[2])],
         }
         if col.type == "BOX":
-            # Box Colliderの向きをランタイムへ渡せるようにrotationもJSONへ出力する。
+            # 既存のJSON形式を維持しつつBox Collider専用の回転値も明示的に出力する。
             c["size"] = [float(col.size[0]), float(col.size[1]), float(col.size[2])]
-            c["rotation"] = [
+            collider_rotation = [
                 math.degrees(float(col.rotation[0])),
                 math.degrees(float(col.rotation[1])),
                 math.degrees(float(col.rotation[2])),
             ]
+            c["rotation"] = collider_rotation
+            c["collider_rotation"] = collider_rotation
         else:
             c["radius"] = float(col.radius)
             if col.type in ["CAPSULE", "CYLINDER"]:
